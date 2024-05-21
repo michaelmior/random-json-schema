@@ -126,6 +126,7 @@ training_args = Seq2SeqTrainingArguments(
     overwrite_output_dir=True,
     save_total_limit=1,
     fp16=True,
+    report_to="wandb",
 )
 
 trainer = Seq2SeqTrainer(

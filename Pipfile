@@ -9,6 +9,7 @@ torch = "*"
 datasets = "*"
 bert-score = "*"
 accelerate = "*"
+wandb = "*"
 
 [dev-packages]
 
