@@ -10,10 +10,12 @@ from transformers import (
 
 MAX_LEN = 512
 TRAIN_BATCH_SIZE = 16
-TRAIN_EPOCHS = 1
+TRAIN_EPOCHS = 20
 
 
 tokenizer = AutoTokenizer.from_pretrained("microsoft/codebert-base")
+tokenizer.bos_token = tokenizer.cls_token
+tokenizer.eos_token = tokenizer.sep_token
 
 dataset = datasets.load_dataset(
     "dataunitylab/json-schema-store", revision="definition-examples-short"
@@ -67,12 +69,20 @@ val_data = get_data(dataset, "validation")
 train_data = get_data(dataset, "train")
 
 bert2bert = EncoderDecoderModel.from_encoder_decoder_pretrained(
-    "microsoft/codebert-base", "microsoft/codebert-base", tie_encoder_decoder=True
+    "microsoft/codebert-base", "microsoft/codebert-base",# tie_encoder_decoder=True
 )
 # set special tokens
 bert2bert.config.decoder_start_token_id = tokenizer.bos_token_id
 bert2bert.config.eos_token_id = tokenizer.eos_token_id
 bert2bert.config.pad_token_id = tokenizer.pad_token_id
+
+bert2bert.config.vocab_size = bert2bert.config.decoder.vocab_size
+bert2bert.config.max_length = MAX_LEN
+bert2bert.config.min_length = 10
+bert2bert.config.no_repeat_ngram_size = 3
+bert2bert.config.early_stopping = True
+bert2bert.config.length_penalty = 2.0
+bert2bert.config.num_beams = 4
 
 # load rouge for validation
 bert_score.utils.model2layers["microsoft/codebert-base"] = 6
@@ -93,9 +103,9 @@ def compute_metrics(pred):
     )
 
     return {
-        "bertscore_precision": round(bertscore_output.precision, 4),
-        "bertscore_recall": round(bertscore_output.recall, 4),
-        "bertscore_fmeasure": round(bertscore_output.fmeasure, 4),
+        "bertscore_precision": bertscore_output["precision"][0],
+        "bertscore_recall": bertscore_output["recall"][0],
+        "bertscore_f1": bertscore_output["f1"][0],
     }
 
 
